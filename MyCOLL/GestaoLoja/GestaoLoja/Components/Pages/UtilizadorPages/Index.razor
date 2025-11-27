@@ -38,7 +38,15 @@ else
                         }
                     </td>
                     <td>
-                        <a href="@($"utilizadores/edit/{user.Id}")" class="btn btn-sm btn-primary">Ativar/Editar</a>
+                        @* ADICIONAR ESTA CONDIÇÃO: Esconde o botão se for o admin *@
+                        @if (user.UserName != "admin@mycoll.pt")
+                        {
+                            <a href="@($"utilizadores/edit/{user.Id}")" class="btn btn-sm btn-primary">Ativar/Editar</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted fst-italic">Protegido</span>
+                        }
                     </td>
                 </tr>
             }

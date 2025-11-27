@@ -75,6 +75,13 @@ else
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == Id);
 
+        if (Utilizador is not null && Utilizador.UserName == "admin@mycoll.pt")
+        {
+            // Redireciona de volta se tentarem editar o admin
+            NavigationManager.NavigateTo("/utilizadores");
+            return;
+        }
+
         if (Utilizador is not null)
         {
             perfisAtuais = (await UserManager.GetRolesAsync(Utilizador)).ToList();
@@ -83,6 +90,10 @@ else
 
     public async Task UpdateUtilizador()
     {
+        if (Utilizador is not null && Utilizador.UserName == "admin@mycoll.pt")
+        {
+            return; // Não faz nada
+        }
         if (Utilizador is not null)
         {
             var userNaBD = await DB.Users.FindAsync(Utilizador.Id);
