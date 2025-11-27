@@ -1,0 +1,59 @@
+﻿@page "/categorias/delete/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Apagar Categoria</PageTitle>
+
+<h1>Apagar</h1>
+<h3>Tem a certeza que quer apagar isto?</h3>
+
+@if (Categoria is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div>
+        <h4>Categoria</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-2">Nome:</dt>
+            <dd class="col-sm-10">@Categoria.Nome</dd>
+            
+            <dt class="col-sm-2">Imagem URL:</dt>
+            <dd class="col-sm-10">@Categoria.ImagemURL</dd>
+        </dl>
+
+        <EditForm Model="Categoria" OnValidSubmit="DeleteCategoria" FormName="deleteCategoria">
+             <input type="hidden" @bind-value="Categoria.Id" />
+            <button type="submit" class="btn btn-danger">Apagar</button> |
+            <a href="categorias">Voltar à Lista</a>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Categoria? Categoria { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à BD buscar a categoria específica
+        Categoria = await DB.Categorias.FindAsync(Id);
+    }
+
+    // Este método é chamado quando o formulário é submetido
+    public async Task DeleteCategoria()
+    {
+        if (Categoria is not null)
+        {
+            DB.Categorias.Remove(Categoria); // Marca a categoria para ser apagada
+            await DB.SaveChangesAsync(); // Apaga da BD
+            NavigationManager.NavigateTo("categorias"); // Volta à lista
+        }
+    }
+}

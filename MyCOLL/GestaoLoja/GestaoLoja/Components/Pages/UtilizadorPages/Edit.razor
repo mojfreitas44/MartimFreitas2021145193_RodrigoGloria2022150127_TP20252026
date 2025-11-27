@@ -1,0 +1,100 @@
+﻿@page "/utilizadores/edit/{id}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@inject Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> UserManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Editar Utilizador</PageTitle>
+
+<h1>Editar Utilizador</h1>
+<h4>Ativar ou alterar perfis</h4>
+<hr />
+
+@if (Utilizador is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <dl class="row">
+                <dt class="col-sm-4">Username (Email):</dt>
+                <dd class="col-sm-8">@Utilizador.UserName</dd>
+            </dl>
+
+            <EditForm Model="Utilizador" OnValidSubmit="UpdateUtilizador" FormName="editUtilizador">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <input type="hidden" @bind-value="Utilizador.Id" />
+
+                <div class="mb-3 form-check">
+                    <InputCheckbox id="ativo" @bind-value="Utilizador.IsAtivo" class="form-check-input" />
+                    <label for="ativo" class="form-check-label">Utilizador Ativo (Aprovado pelo Admin)</label>
+                </div>
+
+                <hr />
+                <h5>Perfis (Roles)</h5>
+
+                <div class="mb-3">
+                    <label>Perfis Atuais:</label>
+                    @foreach (var role in perfisAtuais)
+                    {
+                        <span class="badge bg-secondary me-1">@role</span>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div class="mt-3">
+    <a href="/utilizadores">Voltar à Lista</a>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    public ApplicationUser? Utilizador { get; set; }
+
+    private List<string> perfisAtuais = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // --- CORREÇÃO AQUI ---
+        // Adicionamos .AsNoTracking()
+        // Isto força o Blazor a ir à Base de Dados buscar o valor REAL
+        // e a ignorar o objeto que estava em memória (cache).
+        Utilizador = await DB.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == Id);
+
+        if (Utilizador is not null)
+        {
+            perfisAtuais = (await UserManager.GetRolesAsync(Utilizador)).ToList();
+        }
+    }
+
+    public async Task UpdateUtilizador()
+    {
+        if (Utilizador is not null)
+        {
+            var userNaBD = await DB.Users.FindAsync(Utilizador.Id);
+            if (userNaBD is not null)
+            {
+                userNaBD.IsAtivo = Utilizador.IsAtivo;
+
+                DB.Entry(userNaBD).State = EntityState.Modified;
+                await DB.SaveChangesAsync();
+            }
+
+            NavigationManager.NavigateTo("/utilizadores");
+        }
+    }
+}

@@ -1,0 +1,85 @@
+﻿@page "/produtos/details/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Detalhes do Produto</PageTitle>
+
+<h1>Detalhes do Produto</h1>
+
+@if (Produto is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div>
+        <h4>@Produto.Nome</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-3">ID do Produto:</dt>
+            <dd class="col-sm-9">@Produto.Id</dd>
+
+            <dt class="col-sm-3">Nome:</dt>
+            <dd class="col-sm-9">@Produto.Nome</dd>
+
+            <dt class="col-sm-3">Descrição:</dt>
+            <dd class="col-sm-9">@Produto.Descricao</dd>
+
+            <dt class="col-sm-3">Categoria:</dt>
+            <dd class="col-sm-9">@Produto.Categoria?.Nome</dd>
+
+            <dt class="col-sm-3">Fornecedor:</dt>
+            <dd class="col-sm-9">@Produto.ApplicationUser?.UserName</dd>
+
+            <dt class="col-sm-3">Preço Base (Fornecedor):</dt>
+            <dd class="col-sm-9">@Produto.PrecoBase.ToString("C")</dd>
+
+            <dt class="col-sm-3">Preço Final (Venda):</dt>
+            <dd class="col-sm-9">@Produto.PrecoFinal.ToString("C")</dd>
+
+            <dt class="col-sm-3">Estado de Conservação:</dt>
+            <dd class="col-sm-9">@Produto.EstadoConservacao</dd>
+
+            <dt class="col-sm-3">Ano:</dt>
+            <dd class="col-sm-9">@Produto.Ano</dd>
+
+            <dt class="col-sm-3">Estado na Loja:</dt>
+            <dd class="col-sm-9">
+                @if (Produto.Ativo)
+                {
+                    <span class="badge bg-success">Ativo</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Imagem URL:</dt>
+            <dd class="col-sm-9">@Produto.ImagemURL</dd>
+        </dl>
+    </div>
+    <hr />
+    <div>
+        <a href="@($"produtos/edit/{Produto.Id}")" class="btn btn-primary">Editar</a> |
+        <a href="produtos">Voltar à Lista</a>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public GestaoLoja.Entities.Produto? Produto { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carrega o produto e todos os dados relacionados (Categoria e Fornecedor)
+        Produto = await DB.Produtos
+            .Include(p => p.Categoria)
+            .Include(p => p.ApplicationUser)
+            .FirstOrDefaultAsync(p => p.Id == Id);
+    }
+}

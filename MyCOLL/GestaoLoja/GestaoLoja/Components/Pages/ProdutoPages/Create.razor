@@ -1,0 +1,113 @@
+﻿@page "/produtos/create"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Adicionar Produto</PageTitle>
+
+<h1>Adicionar Produto</h1>
+<h4>Novo Artigo de Coleção</h4>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <EditForm Model="Produto" OnValidSubmit="AddProduto" FormName="createProduto">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome do Artigo:</label>
+                <InputText id="nome" @bind-value="Produto.Nome" class="form-control" />
+                <ValidationMessage For="() => Produto.Nome" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="descricao" class="form-label">Descrição:</label>
+                <InputTextArea id="descricao" @bind-value="Produto.Descricao" class="form-control" />
+                <ValidationMessage For="() => Produto.Descricao" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="precoBase" class="form-label">Preço Base (Fornecedor):</label>
+                <InputNumber id="precoBase" @bind-value="Produto.PrecoBase" class="form-control" />
+                <ValidationMessage For="() => Produto.PrecoBase" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="categoria" class="form-label">Categoria:</label>
+                <InputSelect id="categoria" @bind-value="Produto.CategoriaId" class="form-select">
+                    <option value="0">-- Selecione uma Categoria --</option>
+                    @foreach (var categoria in categorias)
+                    {
+                        <option value="@categoria.Id">@categoria.Nome</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Produto.CategoriaId" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="fornecedor" class="form-label">Fornecedor (Utilizador):</label>
+                <InputSelect id="fornecedor" @bind-value="Produto.ApplicationUserId" class="form-select">
+                    <option value="">-- Selecione o Fornecedor --</option>
+                    @foreach (var user in fornecedores)
+                    {
+                        <option value="@user.Id">@user.UserName</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Produto.ApplicationUserId" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="estado" class="form-label">Estado de Conservação:</label>
+                <InputText id="estado" @bind-value="Produto.EstadoConservacao" class="form-control" />
+                <ValidationMessage For="() => Produto.EstadoConservacao" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="ano" class="form-label">Ano:</label>
+                <InputNumber id="ano" @bind-value="Produto.Ano" class="form-control" />
+                <ValidationMessage For="() => Produto.Ano" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="imagemurl" class="form-label">Imagem URL:</label>
+                <InputText id="imagemurl" @bind-value="Produto.ImagemURL" class="form-control" />
+                <ValidationMessage For="() => Produto.ImagemURL" class="text-danger" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Criar Produto</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="produtos">Voltar à Lista</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Produto Produto { get; set; } = new();
+
+    // Listas para popular os dropdowns
+    private List<GestaoLoja.Entities.Categoria> categorias = new();
+    private List<ApplicationUser> fornecedores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carrega as categorias e os utilizadores (fornecedores) da BD
+        categorias = await DB.Categorias.ToListAsync();
+        fornecedores = await DB.Users.ToListAsync();
+    }
+
+    public async Task AddProduto()
+    {
+        // NOTA: O produto é criado com Ativo = false (Pendente) por defeito,
+        // e PrecoFinal = 0, tal como definido na entidade Produto.cs.
+        // Isto está correto de acordo com o enunciado.
+
+        DB.Produtos.Add(Produto);
+        await DB.SaveChangesAsync();
+        NavigationManager.NavigateTo("produtos");
+    }
+}

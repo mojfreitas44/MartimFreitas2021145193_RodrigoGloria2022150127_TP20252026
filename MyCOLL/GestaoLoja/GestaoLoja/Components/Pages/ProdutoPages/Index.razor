@@ -1,0 +1,74 @@
+﻿@page "/produtos"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Gestão de Produtos</PageTitle>
+
+<h1>Gestão de Produtos</h1>
+
+<p>
+    <a href="produtos/create" class="btn btn-success">Adicionar Produto Manualmente</a>
+</p>
+
+@if (produtos == null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Categoria</th>
+                <th>Fornecedor</th>
+                <th>Preço Base</th>
+                <th>Preço Final</th>
+                <th>Estado</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in produtos)
+            {
+                <tr>
+                    <td>@produto.Nome</td>
+                    <td>@produto.Categoria?.Nome</td>
+                    <td>@produto.ApplicationUser?.UserName</td>
+                    <td>@produto.PrecoBase.ToString("C")</td>
+                    <td>@produto.PrecoFinal.ToString("C")</td>
+                    <td>
+                        @if (produto.Ativo)
+                        {
+                            <span class="badge bg-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="@($"produtos/edit/{produto.Id}")" class="btn btn-sm btn-primary">Editar/Ativar</a>
+                        <a href="@($"produtos/details/{produto.Id}")" class="btn btn-sm btn-info">Detalhes</a>
+                        <a href="@($"produtos/delete/{produto.Id}")" class="btn btn-sm btn-danger">Apagar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<GestaoLoja.Entities.Produto>? produtos;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à BD buscar todos os produtos
+        // Usamos .Include() para carregar os dados da Categoria e do Utilizador (Fornecedor)
+        produtos = await DB.Produtos
+            .Include(p => p.Categoria)
+            .Include(p => p.ApplicationUser)
+            .ToListAsync();
+    }
+}

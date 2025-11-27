@@ -1,0 +1,72 @@
+﻿@page "/encomendas"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Gestão de Encomendas</PageTitle>
+
+<h1>Gestão de Encomendas</h1>
+<hr />
+
+@if (encomendas == null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Cliente (Username)</th>
+                <th>Preço Total</th>
+                <th>Estado</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var encomenda in encomendas)
+            {
+                <tr>
+                    <td>@encomenda.DataEncomenda.ToShortDateString()</td>
+                    <td>@encomenda.ApplicationUser?.UserName</td>
+                    <td>@encomenda.PrecoTotal.ToString("C")</td>
+                    <td>
+                        <span class="badge @GetBadgeClass(encomenda.Estado)">
+                            @encomenda.Estado
+                        </span>
+                    </td>
+                    <td>
+                        <a href="@($"encomendas/details/{encomenda.Id}")" class="btn btn-sm btn-info">Detalhes</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<GestaoLoja.Entities.Encomenda>? encomendas;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à BD buscar todas as encomendas
+        // Usamos .Include() para carregar o nome do Cliente (ApplicationUser)
+        encomendas = await DB.Encomendas
+            .Include(e => e.ApplicationUser)
+            .OrderByDescending(e => e.DataEncomenda) // Mostrar as mais recentes primeiro
+            .ToListAsync();
+    }
+
+    // Função auxiliar para mudar a cor do "badge" conforme o estado
+    private string GetBadgeClass(string estado)
+    {
+        return estado switch
+        {
+            "Pendente" => "bg-warning text-dark",
+            "Confirmada" => "bg-success",
+            "Rejeitada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

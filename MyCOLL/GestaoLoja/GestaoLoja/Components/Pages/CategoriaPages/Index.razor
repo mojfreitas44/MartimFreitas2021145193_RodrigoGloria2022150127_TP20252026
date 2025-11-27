@@ -1,0 +1,53 @@
+﻿@page "/categorias"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Categorias</PageTitle>
+
+<h1>Categorias de Colecionáveis</h1>
+
+<p>
+    <a href="categorias/create" class="btn btn-success">Criar Nova Categoria</a>
+</p>
+
+@if (categorias == null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Imagem URL</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var categoria in categorias)
+            {
+                <tr>
+                    <td>@categoria.Nome</td>
+                    <td>@categoria.ImagemURL</td>
+                    <td>
+                        <a href="@($"categorias/edit/{categoria.Id}")" class="btn btn-sm btn-primary">Editar</a> |
+                        <a href="@($"categorias/details/{categoria.Id}")" class="btn btn-sm btn-info">Detalhes</a> |
+                        <a href="@($"categorias/delete/{categoria.Id}")" class="btn btn-sm btn-danger">Apagar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<GestaoLoja.Entities.Categoria>? categorias;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à Base de Dados buscar todas as categorias
+        categorias = await DB.Categorias.ToListAsync();
+    }
+}

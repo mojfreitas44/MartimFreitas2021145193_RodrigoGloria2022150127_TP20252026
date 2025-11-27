@@ -1,0 +1,48 @@
+﻿@page "/categorias/create"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+
+<PageTitle>Criar Categoria</PageTitle>
+
+<h1>Criar</h1>
+<h4>Categoria</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm Model="Categoria" OnValidSubmit="AddCategoria" FormName="createCategoria">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="mb-3">
+                <label for="nome" class="form-label">Nome:</label>
+                <InputText id="nome" @bind-Value="Categoria.Nome" class="form-control" />
+                <ValidationMessage For="() => Categoria.Nome" class="text-danger" />
+            </div>
+
+            <div class="mb-3">
+                <label for="imagemurl" class="form-label">Imagem URL:</label>
+                <InputText id="imagemurl" @bind-Value="Categoria.ImagemURL" class="form-control" />
+                <ValidationMessage For="() => Categoria.ImagemURL" class="text-danger" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Criar</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="categorias">Voltar à Lista</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Categoria Categoria { get; set; } = new();
+
+    // Este método é chamado quando o formulário é submetido
+    public async Task AddCategoria()
+    {
+        DB.Categorias.Add(Categoria); // Adiciona a nova categoria ao "mapa"
+        await DB.SaveChangesAsync(); // Guarda as mudanças na Base de Dados
+        NavigationManager.NavigateTo("categorias"); // Navega de volta para a lista
+    }
+}

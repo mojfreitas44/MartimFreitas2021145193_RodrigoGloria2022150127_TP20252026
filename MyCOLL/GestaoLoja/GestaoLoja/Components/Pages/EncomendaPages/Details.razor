@@ -1,0 +1,129 @@
+﻿@page "/encomendas/details/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Detalhes da Encomenda</PageTitle>
+
+<h1>Detalhes da Encomenda</h1>
+
+@if (Encomenda is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div>
+        <dl class="row">
+            <dt class="col-sm-3">ID da Encomenda:</dt>
+            <dd class="col-sm-9">@Encomenda.Id</dd>
+
+            <dt class="col-sm-3">Data:</dt>
+            <dd class="col-sm-9">@Encomenda.DataEncomenda</dd>
+
+            <dt class="col-sm-3">Cliente:</dt>
+            <dd class="col-sm-9">@Encomenda.ApplicationUser?.UserName</dd>
+
+            <dt class="col-sm-3">Preço Total:</dt>
+            <dd class="col-sm-9">@Encomenda.PrecoTotal.ToString("C")</dd>
+
+            <dt class="col-sm-3">Estado Atual:</dt>
+            <dd class="col-sm-9">
+                <span class="badge @GetBadgeClass(Encomenda.Estado)">
+                    @Encomenda.Estado
+                </span>
+            </dd>
+        </dl>
+    </div>
+    
+    <hr />
+    
+    <h4>Itens da Encomenda</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Quantidade</th>
+                <th>Preço Unitário</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var item in Encomenda.EncomendaItems)
+            {
+                <tr>
+                    <td>@item.Produto?.Nome</td>
+                    <td>@item.Quantidade</td>
+                    <td>@item.PrecoUnitario.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <hr />
+
+    <h4>Ações de Gestão</h4>
+    <div class="mt-3">
+        @if (Encomenda.Estado != "Confirmada")
+        {
+            <button class="btn btn-success" @onclick="@(() => MudarEstado("Confirmada"))">Confirmar Venda</button>
+        }
+        @if (Encomenda.Estado != "Rejeitada")
+        {
+            <button class="btn btn-danger" @onclick="@(() => MudarEstado("Rejeitada"))">Rejeitar Venda</button>
+        }
+        @if (Encomenda.Estado != "Pendente")
+        {
+            <button class="btn btn-warning text-dark" @onclick="@(() => MudarEstado("Pendente"))">Marcar como Pendente</button>
+        }
+    </div>
+    
+    <hr />
+
+    <div>
+        <a href="/encomendas">Voltar à Lista de Encomendas</a>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    public GestaoLoja.Entities.Encomenda? Encomenda { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carrega a encomenda e todos os dados relacionados
+        Encomenda = await DB.Encomendas
+            .Include(e => e.ApplicationUser) // O Cliente
+            .Include(e => e.EncomendaItems) // A lista de itens
+                .ThenInclude(item => item.Produto) // O Produto de cada item
+            .FirstOrDefaultAsync(e => e.Id == Id);
+    }
+
+    // Método para os botões de ação
+    private async Task MudarEstado(string novoEstado)
+    {
+        if (Encomenda is not null)
+        {
+            Encomenda.Estado = novoEstado;
+            DB.Entry(Encomenda).State = EntityState.Modified;
+            await DB.SaveChangesAsync();
+            
+            // Força o recarregamento da página para mostrar o novo estado
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
+    }
+
+    // Função auxiliar para mudar a cor do "badge"
+    private string GetBadgeClass(string estado)
+    {
+        return estado switch
+        {
+            "Pendente" => "bg-warning text-dark",
+            "Confirmada" => "bg-success",
+            "Rejeitada" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

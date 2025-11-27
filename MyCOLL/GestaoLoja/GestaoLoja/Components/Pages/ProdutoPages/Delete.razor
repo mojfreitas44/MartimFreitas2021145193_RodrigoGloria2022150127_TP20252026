@@ -1,0 +1,64 @@
+﻿@page "/produtos/delete/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Apagar Produto</PageTitle>
+
+<h1>Apagar</h1>
+<h3>Tem a certeza que quer apagar este produto?</h3>
+
+@if (Produto is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div>
+        <h4>Produto</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-3">Nome:</dt>
+            <dd class="col-sm-9">@Produto.Nome</dd>
+
+            <dt class="col-sm-3">Fornecedor:</dt>
+            <dd class="col-sm-9">@Produto.ApplicationUser?.UserName</dd>
+
+            <dt class="col-sm-3">Preço Final:</dt>
+            <dd class="col-sm-9">@Produto.PrecoFinal.ToString("C")</dd>
+        </dl>
+
+        <EditForm Model="Produto" OnValidSubmit="DeleteProduto" FormName="deleteProduto">
+            <input type="hidden" @bind-value="Produto.Id" />
+            <button type="submit" class="btn btn-danger">Apagar Definitivamente</button> |
+            <a href="produtos">Voltar à Lista</a>
+        </EditForm>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Produto? Produto { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carrega o produto e o nome do fornecedor para mostrar na confirmação
+        Produto = await DB.Produtos
+            .Include(p => p.ApplicationUser)
+            .FirstOrDefaultAsync(p => p.Id == Id);
+    }
+
+    public async Task DeleteProduto()
+    {
+        if (Produto is not null)
+        {
+            DB.Produtos.Remove(Produto); // Marca para apagar
+            await DB.SaveChangesAsync(); // Apaga da BD
+            NavigationManager.NavigateTo("produtos"); // Volta à lista
+        }
+    }
+}

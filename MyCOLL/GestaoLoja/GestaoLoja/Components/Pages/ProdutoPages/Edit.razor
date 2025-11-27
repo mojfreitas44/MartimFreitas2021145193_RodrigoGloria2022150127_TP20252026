@@ -1,0 +1,198 @@
+﻿@page "/produtos/edit/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Editar Produto</PageTitle>
+
+<h1>Editar e Ativar Produto</h1>
+<hr />
+
+@if (Produto is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <EditForm Model="Produto" OnValidSubmit="UpdateProduto" FormName="editProduto">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <input type="hidden" @bind-value="Produto.Id" />
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome do Artigo:</label>
+                    <InputText id="nome" @bind-value="Produto.Nome" class="form-control" />
+                    <ValidationMessage For="() => Produto.Nome" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="descricao" class="form-label">Descrição:</label>
+                    <InputTextArea id="descricao" @bind-value="Produto.Descricao" class="form-control" rows="3" />
+                </div>
+
+                <hr />
+
+                <div class="card bg-light mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Definição de Preço</h5>
+                        <p class="text-muted small">Pode definir a margem ou o preço final diretamente.</p>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="precoBase" class="form-label">Preço Base (€):</label>
+                                <InputNumber id="precoBase" @bind-value="Produto.PrecoBase" class="form-control" disabled />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="margem" class="form-label">Margem (%):</label>
+                                <InputNumber id="margem" @bind-value="MargemLucro" @bind-value:after="RecalcularPrecoFinal" class="form-control" />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="precoFinal" class="form-label">Preço Final (€):</label>
+                                <InputNumber id="precoFinal" @bind-value="Produto.PrecoFinal" @bind-value:after="RecalcularMargem" class="form-control" />
+                                <ValidationMessage For="() => Produto.PrecoFinal" class="text-danger" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <InputCheckbox id="ativo" @bind-value="Produto.Ativo" class="form-check-input" />
+                    <label for="ativo" class="form-check-label">Produto Ativo (Visível na loja)</label>
+                </div>
+                <hr />
+
+                <div class="mb-3">
+                    <label for="categoria" class="form-label">Categoria:</label>
+                    <InputSelect id="categoria" @bind-value="Produto.CategoriaId" class="form-select">
+                        <option value="0">-- Selecione uma Categoria --</option>
+                        @foreach (var categoria in categorias)
+                        {
+                            <option value="@categoria.Id">@categoria.Nome</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="mb-3">
+                    <label for="fornecedor" class="form-label">Fornecedor:</label>
+                    <InputSelect id="fornecedor" @bind-value="Produto.ApplicationUserId" class="form-select">
+                        <option value="">-- Selecione o Fornecedor --</option>
+                        @foreach (var user in fornecedores)
+                        {
+                            <option value="@user.Id">@user.UserName</option>
+                        }
+                    </InputSelect>
+                </div>
+
+                <div class="mb-3">
+                    <label for="estado" class="form-label">Estado de Conservação:</label>
+                    <InputText id="estado" @bind-value="Produto.EstadoConservacao" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="ano" class="form-label">Ano:</label>
+                    <InputNumber id="ano" @bind-value="Produto.Ano" class="form-control" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="imagemurl" class="form-label">Imagem URL:</label>
+                    <InputText id="imagemurl" @bind-value="Produto.ImagemURL" class="form-control" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="produtos">Voltar à Lista</a>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Produto? Produto { get; set; }
+
+    [SupplyParameterFromForm]
+    public decimal MargemLucro { get; set; } = 0;
+
+    private List<GestaoLoja.Entities.Categoria> categorias = new();
+    private List<ApplicationUser> fornecedores = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        categorias = await DB.Categorias.ToListAsync();
+        fornecedores = await DB.Users.ToListAsync();
+
+        // Usamos AsNoTracking para ler, evitando conflitos na memória
+        Produto = await DB.Produtos.AsNoTracking().FirstOrDefaultAsync(p => p.Id == Id);
+
+        if (Produto is not null)
+        {
+            RecalcularMargem();
+        }
+    }
+
+    private void RecalcularPrecoFinal()
+    {
+        if (Produto != null && Produto.PrecoBase > 0)
+        {
+            Produto.PrecoFinal = Produto.PrecoBase + (Produto.PrecoBase * (MargemLucro / 100));
+            Produto.PrecoFinal = Math.Round(Produto.PrecoFinal, 2);
+        }
+    }
+
+    private void RecalcularMargem()
+    {
+        if (Produto != null && Produto.PrecoBase > 0)
+        {
+            if (Produto.PrecoFinal > Produto.PrecoBase)
+            {
+                MargemLucro = ((Produto.PrecoFinal - Produto.PrecoBase) / Produto.PrecoBase) * 100;
+                MargemLucro = Math.Round(MargemLucro, 2);
+            }
+            else
+            {
+                MargemLucro = 0;
+            }
+        }
+    }
+
+    // Este é o método "à prova de bala"
+    public async Task UpdateProduto()
+    {
+        if (Produto is not null)
+        {
+            // 1. Vamos buscar o objeto "vivo" à base de dados
+            var produtoParaAtualizar = await DB.Produtos.FindAsync(Produto.Id);
+
+            if (produtoParaAtualizar is not null)
+            {
+                // 2. Copiamos os valores do formulário para o objeto vivo
+                produtoParaAtualizar.Nome = Produto.Nome;
+                produtoParaAtualizar.Descricao = Produto.Descricao;
+                produtoParaAtualizar.PrecoBase = Produto.PrecoBase;
+                produtoParaAtualizar.PrecoFinal = Produto.PrecoFinal; // Já vem calculado
+                produtoParaAtualizar.Ativo = Produto.Ativo;
+                produtoParaAtualizar.CategoriaId = Produto.CategoriaId;
+                produtoParaAtualizar.ApplicationUserId = Produto.ApplicationUserId;
+                produtoParaAtualizar.EstadoConservacao = Produto.EstadoConservacao;
+                produtoParaAtualizar.Ano = Produto.Ano;
+                produtoParaAtualizar.ImagemURL = Produto.ImagemURL;
+
+                // 3. Guardamos (O EF deteta as mudanças automaticamente)
+                await DB.SaveChangesAsync();
+
+                NavigationManager.NavigateTo("produtos");
+            }
+        }
+    }
+}

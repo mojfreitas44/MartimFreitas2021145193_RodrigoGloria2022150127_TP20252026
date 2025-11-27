@@ -1,0 +1,71 @@
+﻿@page "/categorias/edit/{id:int}"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@inject NavigationManager NavigationManager
+@using Microsoft.EntityFrameworkCore
+
+<PageTitle>Editar Categoria</PageTitle>
+
+<h1>Editar</h1>
+<h4>Categoria</h4>
+<hr />
+
+@if (Categoria is null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm Model="Categoria" OnValidSubmit="UpdateCategoria" FormName="editCategoria">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" />
+
+                <input type="hidden" @bind-value="Categoria.Id" />
+
+                <div class="mb-3">
+                    <label for="nome" class="form-label">Nome:</label>
+                    <InputText id="nome" @bind-Value="Categoria.Nome" class="form-control" />
+                    <ValidationMessage For="() => Categoria.Nome" class="text-danger" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="imagemurl" class="form-label">Imagem URL:</label>
+                    <InputText id="imagemurl" @bind-Value="Categoria.ImagemURL" class="form-control" />
+                    <ValidationMessage For="() => Categoria.ImagemURL" class="text-danger" />
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="categorias">Voltar à Lista</a>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    [SupplyParameterFromForm]
+    public GestaoLoja.Entities.Categoria? Categoria { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à BD buscar a categoria específica com base no ID da rota
+        Categoria = await DB.Categorias.FindAsync(Id);
+    }
+
+    // Este método é chamado quando o formulário é submetido
+    public async Task UpdateCategoria()
+    {
+        if (Categoria is not null)
+        {
+            DB.Entry(Categoria).State = EntityState.Modified; // Marca a categoria como "modificada"
+            await DB.SaveChangesAsync(); // Guarda as mudanças na BD
+            NavigationManager.NavigateTo("categorias"); // Volta à lista
+        }
+    }
+}

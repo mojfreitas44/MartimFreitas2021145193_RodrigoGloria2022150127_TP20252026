@@ -1,0 +1,57 @@
+﻿@page "/utilizadores"
+@inject GestaoLoja.Data.ApplicationDbContext DB
+@using Microsoft.EntityFrameworkCore
+@using GestaoLoja.Data
+
+<PageTitle>Gestão de Utilizadores</PageTitle>
+
+<h1>Gestão de Utilizadores</h1>
+<hr />
+
+@if (utilizadores == null)
+{
+    <p><em>A carregar...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Username (Email)</th>
+                <th>Estado</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in utilizadores)
+            {
+                <tr>
+                    <td>@user.UserName</td>
+                    <td>
+                        @if (user.IsAtivo)
+                        {
+                            <span class="badge bg-success">Ativo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="@($"utilizadores/edit/{user.Id}")" class="btn btn-sm btn-primary">Ativar/Editar</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<ApplicationUser>? utilizadores;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Vai à Base de Dados buscar todos os utilizadores
+        utilizadores = await DB.Users.ToListAsync();
+    }
+}
