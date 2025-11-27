@@ -1,0 +1,59 @@
+﻿@page "/Account/Manage/ResetAuthenticator"
+
+@using Microsoft.AspNetCore.Identity
+@using GestaoLoja.Data
+@using GestaoLoja.Components.Account
+@using GestaoLoja.Components.Account.Shared
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject ILogger<ResetAuthenticator> Logger
+
+<PageTitle>Redefinir chave autenticadora</PageTitle>
+
+<StatusMessage />
+<h3>Redefinir chave autenticadora</h3>
+<div class="alert alert-warning" role="alert">
+    <p>
+        <span class="glyphicon glyphicon-warning-sign"></span>
+        <strong>Se redefinires a tua chave autenticadora, a tua aplicação atual deixará de funcionar.</strong>
+    </p>
+    <p>
+        Este processo desativa o 2FA até verificares a tua aplicação autenticadora.
+        Se não completares a configuração da tua aplicação, poderás perder o acesso à tua conta.
+    </p>
+</div>
+<div>
+    <form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
+        <AntiforgeryToken />
+        <button class="btn btn-danger" type="submit">Redefinir Chave Autenticadora</button>
+    </form>
+</div>
+
+@code {
+    private ApplicationUser user = default!;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+    }
+
+    private async Task OnSubmitAsync()
+    {
+        await UserManager.SetTwoFactorEnabledAsync(user, false);
+        await UserManager.ResetAuthenticatorKeyAsync(user);
+        var userId = await UserManager.GetUserIdAsync(user);
+        Logger.LogInformation("Utilizador com ID '{UserId}' redefiniu a chave da app autenticadora.", userId);
+
+        await UserManager.SetTwoFactorEnabledAsync(user, true); // Opcional: ou forçar a ir para EnableAuthenticator
+
+        RedirectManager.RedirectToWithStatus(
+            "Account/Manage/EnableAuthenticator",
+            "A chave da tua aplicação autenticadora foi redefinida, precisas de configurar a tua aplicação com a nova chave.",
+            HttpContext);
+    }
+}

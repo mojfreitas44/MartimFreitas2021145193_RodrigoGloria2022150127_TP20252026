@@ -3,43 +3,43 @@ using GestaoLoja.Data;
 using GestaoLoja.Components.Account;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Ler a Connection String
+// 1. LIGAR À BASE DE DADOS
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-// 2. Adicionar o DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-// 3. Adicionar o Identity (Isto JÁ configura a autenticação e os cookies)
+// 2. CONFIGURAR IDENTITY (Isto regista o "Identity.Application" UMA VEZ)
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-    options.SignIn.RequireConfirmedAccount = false)
+{
+    options.SignIn.RequireConfirmedAccount = false;
+})
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// 4. Adicionar o serviço de Email "falso"
+// 3. EMAIL FALSO (Para não dar erro)
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-// Add services to the container.
+// 4. SERVIÇOS BLAZOR
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Configuração para autenticação (Obrigatório para o Blazor)
+// 5. AUTENTICAÇÃO BLAZOR
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-//
-// O BLOCO "builder.Services.AddAuthentication(...).AddIdentityCookies();"
-// FOI APAGADO DAQUI PORQUE ESTAVA EM CONFLITO COM "AddIdentity"
-//
+// --- ATENÇÃO: NÃO HÁ MAIS NENHUM "AddAuthentication" AQUI! ---
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// PIPELINE
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -53,6 +53,10 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// ESTA LINHA É OBRIGATÓRIA PARA OS BOTÕES DE LOGIN FUNCIONAREM:
+app.MapAdditionalIdentityEndpoints();
+
+// SEED (Criação do Admin)
 await Inicializacao.SeedDatabaseAsync(app);
 
 app.Run();

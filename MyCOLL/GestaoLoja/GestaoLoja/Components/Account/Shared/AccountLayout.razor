@@ -1,0 +1,27 @@
+﻿@inherits LayoutComponentBase
+@layout GestaoLoja.Components.Layout.MainLayout
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Http
+
+@if (HttpContext is null)
+{
+    <p>A carregar...</p>
+}
+else
+{
+    @Body
+}
+
+@code {
+    // ESTA PARTE FALTAVA OU ESTAVA MAL FORMADA:
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (HttpContext is null)
+        {
+            NavigationManager.Refresh(forceReload: true);
+        }
+    }
+}
